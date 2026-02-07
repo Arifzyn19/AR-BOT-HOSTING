@@ -1,0 +1,279 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BASIC
+  PREMIUM
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum BotStatus {
+  CONNECTING
+  CONNECTED
+  QR_REQUIRED
+  DISCONNECTED
+  ERROR
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String?  @unique
+  password  String?
+  name      String?
+  avatar    String?
+  role      UserRole @default(BASIC)
+  
+  // OAuth
+  googleId  String?  @unique
+  githubId  String?  @unique
+  
+  // Subscription
+  subscription Subscription?
+  
+  // Relations
+  bots      Bot[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+  
+  // Soft delete
+  deletedAt DateTime?
+  
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+model Subscription {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  plan            UserRole @default(BASIC)
+  isActive        Boolean  @default(true)
+  
+  // Limits
+  maxBots         Int      @default(1)
+  maxGroups       Int      @default(10)
+  dailyMessages   Int      @default(1000)
+  dailyCommands   Int      @default(100)
+  
+  // Billing
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  renewalDate     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("subscriptions")
+}
+
+model Bot {
+  id              String     @id @default(cuid())
+  name            String
+  phoneNumber     String     @unique
+  
+  // Owner
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Status
+  status          BotStatus  @default(DISCONNECTED)
+  isActive        Boolean    @default(false)
+  lastSeen        DateTime?
+  
+  // QR Code
+  qrCode          String?    @db.Text
+  qrCodeExpiry    DateTime?
+  
+  // Session
+  sessionData     Json?
+  
+  // Statistics
+  totalMessages   Int        @default(0)
+  totalCommands   Int        @default(0)
+  totalGroups     Int        @default(0)
+  
+  // Daily counters (reset daily)
+  dailyMessages   Int        @default(0)
+  dailyCommands   Int        @default(0)
+  lastResetDate   DateTime   @default(now())
+  
+  // Settings
+  settings        BotSettings?
+  
+  // Relations
+  messages        Message[]
+  groups          Group[]
+  commands        Command[]
+  logs            BotLog[]
+  
+  // Timestamps
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
+  
+  @@index([userId])
+  @@index([phoneNumber])
+  @@index([status])
+  @@map("bots")
+}
+
+model BotSettings {
+  id                String   @id @default(cuid())
+  botId             String   @unique
+  bot               Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  // Auto Reply
+  autoReply         Boolean  @default(false)
+  autoReplyMessage  String?  @db.Text
+  
+  // Commands
+  commandPrefix     String   @default("!")
+  enableCommands    Boolean  @default(true)
+  
+  // Groups
+  autoJoinGroups    Boolean  @default(false)
+  autoLeaveGroups   Boolean  @default(false)
+  
+  // Notifications
+  notifyOnMessage   Boolean  @default(true)
+  notifyOnCommand   Boolean  @default(true)
+  notifyOnError     Boolean  @default(true)
+  
+  // Webhook
+  webhookUrl        String?
+  webhookEnabled    Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("bot_settings")
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  botId           String
+  bot             Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  // Message details
+  messageId       String   @unique
+  from            String
+  to              String?
+  isGroup         Boolean  @default(false)
+  groupId         String?
+  
+  // Content
+  type            String   // text, image, video, audio, document
+  content         String   @db.Text
+  caption         String?  @db.Text
+  mediaUrl        String?
+  
+  // Metadata
+  timestamp       DateTime
+  isFromMe        Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([botId])
+  @@index([messageId])
+  @@index([timestamp])
+  @@map("messages")
+}
+
+model Group {
+  id              String   @id @default(cuid())
+  botId           String
+  bot             Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  groupId         String   @unique
+  name            String
+  description     String?  @db.Text
+  
+  // Members
+  memberCount     Int      @default(0)
+  adminCount      Int      @default(0)
+  
+  // Status
+  isActive        Boolean  @default(true)
+  isBotAdmin      Boolean  @default(false)
+  
+  joinedAt        DateTime @default(now())
+  leftAt          DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([botId])
+  @@index([groupId])
+  @@map("groups")
+}
+
+model Command {
+  id              String   @id @default(cuid())
+  botId           String
+  bot             Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  // Command details
+  name            String
+  aliases         String[] // Alternative names
+  description     String?  @db.Text
+  example         String?
+  category        String?
+  
+  // Response
+  response        String   @db.Text
+  responseType    String   @default("text") // text, image, video, etc
+  
+  // Permissions
+  adminOnly       Boolean  @default(false)
+  groupOnly       Boolean  @default(false)
+  
+  // Statistics
+  usageCount      Int      @default(0)
+  lastUsed        DateTime?
+  
+  // Status
+  isActive        Boolean  @default(true)
+   
+  cooldown        Int      @default(0)
+  level           Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([botId, name])
+  @@index([botId])
+  @@map("commands")
+}
+
+model BotLog {
+  id              String   @id @default(cuid())
+  botId           String
+  bot             Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  level           String   // info, warn, error
+  event           String
+  message         String   @db.Text
+  metadata        Json?
+  
+  timestamp       DateTime @default(now())
+  
+  @@index([botId])
+  @@index([level])
+  @@index([timestamp])
+  @@map("bot_logs")
+}
