@@ -154,15 +154,23 @@ export class BaileysClientService implements OnModuleInit {
       // ✅ Handle messages FIRST - before connection.update
       this.logger.log('🎧 Registering message handler...');
       sock.ev.on('messages.upsert', async ({ type, messages }) => {
-        this.logger.log(`📬 messages.upsert - Type: ${type}, Count: ${messages.length}`);
-        
-        if (type === 'notify') {
-          for (const msg of messages) {
-            this.logger.log(`📨 Message from: ${msg.key.remoteJid}, fromMe: ${msg.key.fromMe}`);
-            
-            if (!msg.key.fromMe && msg.message) {
-              this.logger.log(`✅ Processing message...`);
-              await this.handleMessage(botId, msg);
+        this.logger.log(`📬 messages.upsert - Type: ${type}, Count: ${messages?.length || 0}`);
+
+        if (type === 'notify' && Array.isArray(messages)) {
+          for (const rawMsg of messages) {
+            try {
+              this.logger.debug && this.logger.debug(`Raw message event: ${JSON.stringify(rawMsg)?.slice(0, 400)}`);
+
+              // Ignore messages from the bot itself
+              if (rawMsg.key?.fromMe) {
+                this.logger.log(`↪️ Ignoring message fromMe: ${rawMsg.key?.remoteJid}`);
+                continue;
+              }
+
+              // Some messages are wrapped (ephemeral, viewOnce) - let handleMessage normalize
+              await this.handleMessage(botId, rawMsg);
+            } catch (err) {
+              this.logger.error(`Error processing upsert message: ${err}`);
             }
           }
         }
@@ -370,37 +378,67 @@ export class BaileysClientService implements OnModuleInit {
     return connection?.status === BotStatus.CONNECTED;
   }
 
-  private async handleMessage(botId: string, msg: any) {
+  private async handleMessage(botId: string, rawMsg: any) {
     try {
-      // Handle new message format with lid addressing
-      const from = msg.key.remoteJid || msg.key.remoteJidAlt || '';
-      const isGroup = from.endsWith('@g.us');
-      
-      // Extract message content from various message types
+      // Normalize and unwrap message wrappers (ephemeral/viewOnce)
+      if (!rawMsg?.message) {
+        this.logger.log('⚠️ Received message without content, skipping');
+        return;
+      }
+
+      let message = rawMsg.message;
+
+      // Unwrap ephemeral or viewOnce wrappers
+      if (message.ephemeralMessage?.message) {
+        message = message.ephemeralMessage.message;
+      }
+
+      if (message.viewOnceMessage?.message) {
+        message = message.viewOnceMessage.message;
+      }
+
+      // Skip protocol messages (status updates, key distribution, etc.)
+      const firstKey = Object.keys(message)[0] || 'unknown';
+      if (firstKey === 'protocolMessage') {
+        this.logger.log('⚠️ protocolMessage received, ignoring');
+        return;
+      }
+
+      // Determine chat and sender
+      const chatId = rawMsg.key.remoteJid || rawMsg.key.remoteJidAlt || '';
+      const isGroup = chatId.endsWith('@g.us');
+      const senderId = isGroup ? (rawMsg.key.participant || rawMsg.key.remoteJid || '') : (rawMsg.key.remoteJid || '');
+
+      // Extract content from common message types
       const messageContent =
-        msg.message?.conversation ||
-        msg.message?.extendedTextMessage?.text ||
-        msg.message?.imageMessage?.caption ||
-        msg.message?.videoMessage?.caption ||
-        msg.message?.documentMessage?.caption ||
+        message.conversation ||
+        message.extendedTextMessage?.text ||
+        message.imageMessage?.caption ||
+        message.videoMessage?.caption ||
+        message.documentMessage?.caption ||
+        message.buttonsResponseMessage?.selectedId ||
+        message.buttonsMessage?.selectedButtonId ||
+        message.listResponseMessage?.singleSelectReply?.selectedRowId ||
         '';
 
-      // Get sender info
-      const pushName = msg.pushName || 'Unknown';
-      const messageType = Object.keys(msg.message || {})[0] || 'text';
+      const pushName = rawMsg.pushName || 'Unknown';
+      const messageType = Object.keys(message || {})[0] || 'unknown';
 
-      this.logger.log(`📨 New message from ${pushName} (${from}): ${messageContent.substring(0, 50)}...`);
+      this.logger.log(`📨 New message [${messageType}] from ${pushName} (${senderId}) in chat ${chatId}: ${messageContent.substring(0, 120)}...`);
+
+      // Safe timestamp handling
+      const ts = rawMsg.messageTimestamp ? Number(rawMsg.messageTimestamp) : (rawMsg.message?.timestamp ? Number(rawMsg.message.timestamp) : Math.floor(Date.now() / 1000));
 
       // Save to database
       await this.prisma.message.create({
         data: {
           botId,
-          messageId: msg.key.id || '',
-          from: isGroup ? from : (msg.key.remoteJidAlt || from),
+          messageId: rawMsg.key.id || '',
+          from: isGroup ? chatId : senderId,
           isGroup,
           type: messageType,
           content: messageContent,
-          timestamp: new Date(Number(msg.messageTimestamp) * 1000),
+          timestamp: new Date(ts * 1000),
         },
       });
 
@@ -417,7 +455,7 @@ export class BaileysClientService implements OnModuleInit {
       this.gateway.emitNewMessage(botId, {
         from: pushName,
         content: messageContent,
-        timestamp: new Date(),
+        timestamp: new Date(ts * 1000),
       });
 
       // Check if it's a command - use PluginHandler
@@ -429,8 +467,8 @@ export class BaileysClientService implements OnModuleInit {
       if (bot?.settings?.enableCommands && messageContent.startsWith(bot.settings.commandPrefix)) {
         await this.pluginHandler.handleMessage(
           botId,
-          from,
-          from, // sender (for now, same as from)
+          chatId,
+          senderId,
           pushName,
           messageContent,
           isGroup
