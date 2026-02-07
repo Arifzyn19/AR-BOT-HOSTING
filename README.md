@@ -31,41 +31,41 @@ Platform hosting WhatsApp bot modern yang memungkinkan pengguna membuat, mengelo
 ### Installation
 
 1. **Clone repository**
-\`\`\`bash
+```bash
 git clone <repository-url>
 cd bot-hosting-platform
-\`\`\`
+```
 
 2. **Install dependencies**
-\`\`\`bash
+```bash
 pnpm install
-\`\`\`
+```
 
 3. **Setup environment variables**
 
 Backend (\`apps/backend/.env\`):
-\`\`\`bash
+```bash
 cp apps/backend/.env.example apps/backend/.env
 # Edit .env dengan konfigurasi Anda
-\`\`\`
+```
 
 Frontend (\`apps/frontend/.env.local\`):
-\`\`\`bash
+```bash
 cp apps/frontend/.env.example apps/frontend/.env.local
-\`\`\`
+```
 
 4. **Setup database**
-\`\`\`bash
+```bash
 cd apps/backend
 pnpm prisma generate
 pnpm prisma migrate dev
-\`\`\`
+```
 
 5. **Run development servers**
-\`\`\`bash
+```bash
 # Dari root directory
 pnpm dev
-\`\`\`
+```
 
 Backend akan berjalan di: http://localhost:3001
 Frontend akan berjalan di: http://localhost:3000
@@ -73,7 +73,7 @@ API Documentation: http://localhost:3001/api/docs
 
 ## 📁 Project Structure
 
-\`\`\`
+```
 bot-hosting-platform/
 ├── apps/
 │   ├── backend/          # NestJS Backend
@@ -83,12 +83,12 @@ bot-hosting-platform/
 │   └── shared-utils/     # Shared utilities
 ├── docker/               # Docker configurations
 └── .github/              # CI/CD workflows
-\`\`\`
+```
 
 ## 🛠️ Development
 
 ### Backend Commands
-\`\`\`bash
+```bash
 cd apps/backend
 
 # Development
@@ -104,10 +104,10 @@ pnpm test
 pnpm prisma:generate
 pnpm prisma:migrate
 pnpm prisma:studio
-\`\`\`
+```
 
 ### Frontend Commands
-\`\`\`bash
+```bash
 cd apps/frontend
 
 # Development
@@ -118,7 +118,7 @@ pnpm build
 
 # Lint
 pnpm lint
-\`\`\`
+```
 
 ## 📚 API Documentation
 
@@ -157,21 +157,21 @@ Platform menggunakan JWT untuk autentikasi. Tersedia metode login:
 ## 🔄 Development Workflow
 
 1. **Buat branch baru**
-\`\`\`bash
+```bash
 git checkout -b feature/nama-fitur
-\`\`\`
+```
 
 2. **Kembangkan fitur**
 3. **Test**
 4. **Commit**
-\`\`\`bash
+```bash
 git commit -m "feat: deskripsi fitur"
-\`\`\`
+```
 
 5. **Push dan buat PR**
-\`\`\`bash
+```bash
 git push origin feature/nama-fitur
-\`\`\`
+```
 
 ## 📝 License
 
