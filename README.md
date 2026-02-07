@@ -177,10 +177,6 @@ git push origin feature/nama-fitur
 
 MIT License
 
-## 👥 Contributors
-
-- Your Name
-
 ## 🙏 Acknowledgments
 
 - NestJS
