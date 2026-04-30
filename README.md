@@ -33,7 +33,7 @@ Platform hosting WhatsApp bot modern yang memungkinkan pengguna membuat, mengelo
 1. **Clone repository**
 ```bash
 git clone https://github.com/Arifzyn19/AR-BOT-HOSTING
-cd bot-hosting-platform
+cd AR-BOT-HOSTING
 ```
 
 2. **Install dependencies**
@@ -74,7 +74,7 @@ API Documentation: http://localhost:3001/api/docs
 ## Project Structure
 
 ```
-bot-hosting-platform/
+AR-BOT-HOSTING/
 ├── apps/
 │   ├── backend/          # NestJS Backend
 │   └── frontend/         # Next.js Frontend
