@@ -1,8 +1,8 @@
-# 🤖 WhatsApp Bot Hosting Platform
+# WhatsApp Bot Hosting Platform
 
 Platform hosting WhatsApp bot modern yang memungkinkan pengguna membuat, mengelola, dan memonitor instance bot WhatsApp mereka sendiri.
 
-## 📋 Tech Stack
+## Tech Stack
 
 ### Backend
 - **Framework:** NestJS (TypeScript)
@@ -20,7 +20,7 @@ Platform hosting WhatsApp bot modern yang memungkinkan pengguna membuat, mengelo
 - **Forms:** React Hook Form + Zod
 - **API:** TanStack Query
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js >= 18.0.0
@@ -32,7 +32,7 @@ Platform hosting WhatsApp bot modern yang memungkinkan pengguna membuat, mengelo
 
 1. **Clone repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/Arifzyn19/AR-BOT-HOSTING
 cd bot-hosting-platform
 ```
 
@@ -71,7 +71,7 @@ Backend akan berjalan di: http://localhost:3001
 Frontend akan berjalan di: http://localhost:3000
 API Documentation: http://localhost:3001/api/docs
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 bot-hosting-platform/
@@ -120,19 +120,19 @@ pnpm build
 pnpm lint
 ```
 
-## 📚 API Documentation
+## API Documentation
 
 Setelah menjalankan backend, akses dokumentasi API Swagger di:
 http://localhost:3001/api/docs
 
-## 🔐 Authentication
+## Authentication
 
 Platform menggunakan JWT untuk autentikasi. Tersedia metode login:
 - Email & Password
 - Google OAuth (konfigurasi diperlukan)
 - GitHub OAuth (konfigurasi diperlukan)
 
-## 🎨 UI Theme
+## UI Theme
 
 - **Style:** Modern, clean, minimalist
 - **Color Scheme:** Dark theme
@@ -177,7 +177,7 @@ git push origin feature/nama-fitur
 
 MIT License
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - NestJS
 - Next.js
