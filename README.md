@@ -85,7 +85,7 @@ bot-hosting-platform/
 └── .github/              # CI/CD workflows
 ```
 
-## 🛠️ Development
+## Development
 
 ### Backend Commands
 ```bash
@@ -142,7 +142,7 @@ Platform menggunakan JWT untuk autentikasi. Tersedia metode login:
 - **NO GRADIENTS** - solid colors only
 - **Typography:** Inter font
 
-## 📦 Features
+## Features
 
 - ✅ User authentication (local + OAuth)
 - ✅ Create dan manage WhatsApp bots
@@ -173,7 +173,7 @@ git commit -m "feat: deskripsi fitur"
 git push origin feature/nama-fitur
 ```
 
-## 📝 License
+## License
 
 MIT License
 
